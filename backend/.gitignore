@@ -1,0 +1,32 @@
+# Ignore Python virtual environment
+.venv/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# Environment files
+.env
+.env.*
+
+# Log files
+*.log
+
+# macOS system files
+.DS_Store
+
+# Modal cache or config (if any are generated)
+.modal/
+
+
+*.sqlite
+*.db
+*.json
