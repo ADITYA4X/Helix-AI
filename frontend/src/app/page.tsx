@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import GeneViewer from "~/components/gene-viewer";
 
 type Mode = "search" | "browse";
 
@@ -173,7 +174,11 @@ export default function HomePage() {
 
       <main className="container mx-auto px-6 py-6">
         {selectedGene ? (
-          <h1>Selected gene {selectedGene.name}</h1>
+          <GeneViewer
+            gene={selectedGene}
+            genomeId={selectedGenome}
+            onClose={() => setSelectedGene(null)}
+          />
         ) : (
           <>
             <Card className="mb-6 gap-0 border-none bg-white py-0 shadow-sm">

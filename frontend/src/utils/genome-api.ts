@@ -26,7 +26,25 @@ export interface GeneFromSearch {
   name: string;
   chrom: string;
   description: string;
-  gene_id: string;
+  gene_id?: string;
+}
+
+export interface GeneDetailsFromSearch {
+  genomicInfo?: {
+    chrstart: number;
+    chrstop: number;
+    strand?: string;
+  }[];
+  summary?: string;
+  organism?: {
+    scientificName: string;
+    commonName: string;
+  };
+}
+
+export interface GeneBounds {
+  min: number;
+  max: number;
 }
 
 export async function getAvailableGenomes() {
@@ -149,4 +167,57 @@ export async function searchGenes(query: string, genome: string) {
     }
   }
   return { query, genome, results };
+}
+
+export async function fetchGeneDetails(geneId: string): Promise<{
+  geneDetails: GeneDetailsFromSearch | null;
+  geneBounds: GeneBounds | null;
+  initialRange: { start: number; end: number } | null;
+}> {
+  try {
+    const detailUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&id=${geneId}&retmode=json`;
+    const detailResponse = await fetch(detailUrl);
+
+    if (!detailResponse.ok) {
+      console.error(
+        `Failed to fetch gene details for ID ${geneId}: ${detailResponse.statusText}`,
+      );
+      return { geneDetails: null, geneBounds: null, initialRange: null };
+    }
+
+    const detailData = await detailResponse.json();
+
+    if (detailData.result?.[geneId]) {
+      const detail = detailData.result[geneId];
+
+      if (detail.genomicInfo?.length > 0) {
+        const info = detail.genomicInfo[0];
+
+        const minPos = Math.min(info.chrstart, info.chrstop);
+        const maxPos = Math.max(info.chrstart, info.chrstop);
+        const bounds = {
+          min: minPos,
+          max: maxPos,
+        };
+
+        const geneSize = maxPos - minPos;
+        const seqStart = minPos;
+        const seqEnd = geneSize > 10000 ? minPos + 10000 : maxPos;
+        const range = {
+          start: seqStart,
+          end: seqEnd,
+        };
+
+        return {
+          geneDetails: detail,
+          geneBounds: bounds,
+          initialRange: range,
+        };
+      }
+    }
+    return { geneDetails: null, geneBounds: null, initialRange: null };
+  } catch (error) {
+    console.error("Error fetching gene details:", error);
+    return { geneDetails: null, geneBounds: null, initialRange: null };
+  }
 }
