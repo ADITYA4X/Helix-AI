@@ -10,6 +10,7 @@ import {
 import { Button } from "./ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { GeneInformation } from "./gene-information";
 
 export default function GeneViewer({
   gene,
@@ -106,7 +107,7 @@ export default function GeneViewer({
           setEndPosition(fetchedRange.end.toString());
           await fetchGeneSequence(fetchedRange.start, fetchedRange.end);
         }
-        console.log("Gene details fetched successfully:", fetchedDetail);
+        // console.log("Gene details fetched successfully:", fetchedDetail);
       } catch {
         setError("Failed to load gene information. Please try again.");
       } finally {
@@ -128,6 +129,12 @@ export default function GeneViewer({
         <ArrowLeftIcon className="mr-2 h-4 w-4" />
         Back to results
       </Button>
+
+      <GeneInformation
+        gene={gene}
+        geneDetail={geneDetail}
+        geneBounds={geneBounds}
+      />
     </div>
   );
 }

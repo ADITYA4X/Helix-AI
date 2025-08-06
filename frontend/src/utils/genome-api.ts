@@ -37,8 +37,8 @@ export interface GeneDetailsFromSearch {
   }[];
   summary?: string;
   organism?: {
-    scientificName: string;
-    commonName: string;
+    scientificname: string;
+    commonname: string;
   };
 }
 
@@ -255,7 +255,7 @@ export async function fetchGeneSequence(
     }
 
     const sequence = data.dna.toUpperCase();
-    console.log("Fetched gene sequence:", sequence);
+    // console.log("Fetched gene sequence:", sequence);
 
     return {
       sequence,
