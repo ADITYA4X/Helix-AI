@@ -166,6 +166,7 @@ export async function searchGenes(query: string, genome: string) {
       }
     }
   }
+  // console.log("Gene search results:", results);
   return { query, genome, results };
 }
 
@@ -186,27 +187,26 @@ export async function fetchGeneDetails(geneId: string): Promise<{
     }
 
     const detailData = await detailResponse.json();
+    // console.log("Gene detail data:", detailData);
 
     if (detailData.result?.[geneId]) {
       const detail = detailData.result[geneId];
+      // console.log("Fetched gene details:", detail);
 
-      if (detail.genomicInfo?.length > 0) {
-        const info = detail.genomicInfo[0];
+      if (detail.genomicinfo && detail.genomicinfo.length > 0) {
+        const info = detail.genomicinfo[0];
 
         const minPos = Math.min(info.chrstart, info.chrstop);
         const maxPos = Math.max(info.chrstart, info.chrstop);
-        const bounds = {
-          min: minPos,
-          max: maxPos,
-        };
+        const bounds = { min: minPos, max: maxPos };
 
         const geneSize = maxPos - minPos;
         const seqStart = minPos;
         const seqEnd = geneSize > 10000 ? minPos + 10000 : maxPos;
-        const range = {
-          start: seqStart,
-          end: seqEnd,
-        };
+        const range = { start: seqStart, end: seqEnd };
+
+        // console.log("Gene bounds:", bounds);
+        // console.log("Initial range for sequence:", range);
 
         return {
           geneDetails: detail,
@@ -219,5 +219,53 @@ export async function fetchGeneDetails(geneId: string): Promise<{
   } catch (error) {
     console.error("Error fetching gene details:", error);
     return { geneDetails: null, geneBounds: null, initialRange: null };
+  }
+}
+
+export async function fetchGeneSequence(
+  chrom: string,
+  start: number,
+  end: number,
+  genomeId: string,
+): Promise<{
+  sequence: string;
+  actualRange: { start: number; end: number };
+  error?: string;
+}> {
+  try {
+    const chromosome = chrom.startsWith("chr") ? chrom : `chr${chrom}`;
+
+    const apiStart = start - 1; // Convert to 0-based index
+    const apiEnd = end; // End is inclusive in UCSC API
+
+    const apiUrl = `https://api.genome.ucsc.edu/getData/sequence?genome=${genomeId};chrom=${chromosome};start=${apiStart};end=${apiEnd}`;
+    const response = await fetch(apiUrl);
+
+    const data = await response.json();
+    // console.log("API response:", data);
+
+    const actualRange = { start, end };
+
+    if (data.error || !data.dna) {
+      return {
+        sequence: "",
+        actualRange,
+        error: `Error fetching sequence: ${data.error}`,
+      };
+    }
+
+    const sequence = data.dna.toUpperCase();
+    console.log("Fetched gene sequence:", sequence);
+
+    return {
+      sequence,
+      actualRange,
+    };
+  } catch (err) {
+    return {
+      sequence: "",
+      actualRange: { start, end },
+      error: "Internal error in fetching sequence data.",
+    };
   }
 }

@@ -95,7 +95,7 @@ export default function HomePage() {
       const data = await searchGenes(query, genome);
       const results = filterFn ? data.results.filter(filterFn) : data.results;
       setSearchResults(results);
-      console.log("Search results:", results);
+      // console.log("Search results:", results);
     } catch (error) {
       console.error("Error performing gene search:", error);
       setError("Failed to perform gene search");

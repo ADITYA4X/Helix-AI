@@ -1,14 +1,15 @@
 "use client";
 
 import {
+  fetchGeneDetails,
+  fetchGeneSequence as fetchGeneSequenceApi,
   type GeneFromSearch,
   type GeneDetailsFromSearch,
-  fetchGeneDetails,
   type GeneBounds,
 } from "~/utils/genome-api";
 import { Button } from "./ui/button";
 import { ArrowLeftIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function GeneViewer({
   gene,
@@ -28,6 +29,47 @@ export default function GeneViewer({
 
   const [startPosition, setStartPosition] = useState<string>("");
   const [endPosition, setEndPosition] = useState<string>("");
+  const [geneSequence, setGeneSequence] = useState<string>("");
+  const [isLoadingSequence, setIsLoadingSequence] = useState(false);
+
+  const [actualRange, setActualRange] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
+
+  const fetchGeneSequence = useCallback(
+    async (start: number, end: number) => {
+      try {
+        setIsLoadingSequence(true);
+        setError(null);
+
+        // console.log("Fetching gene sequence for range:", {
+        //   chrom: gene.chrom,
+        //   start,
+        //   end,
+        //   genomeId,
+        // });
+
+        const {
+          sequence,
+          actualRange: fetchedRange,
+          error: apiError,
+        } = await fetchGeneSequenceApi(gene.chrom, start, end, genomeId);
+
+        setGeneSequence(sequence);
+        setActualRange(fetchedRange);
+
+        if (apiError) {
+          setError(apiError);
+        }
+      } catch (error) {
+        setError("Failed to fetch gene sequence data. Please try again.");
+      } finally {
+        setIsLoadingSequence(false);
+      }
+    },
+    [gene.chrom, genomeId],
+  );
 
   useEffect(() => {
     const initializeGeneData = async () => {
@@ -43,16 +85,28 @@ export default function GeneViewer({
         return;
       }
 
-      try {
-        const { geneDetails, geneBounds, initialRange } =
-          await fetchGeneDetails(gene.gene_id);
-        setGeneDetail(geneDetails);
-        setGeneBounds(geneBounds);
+      //   console.log("Fetching gene details for gene ID:", gene.gene_id);
 
-        if (initialRange) {
-          setStartPosition(initialRange.start.toString());
-          setEndPosition(initialRange.end.toString());
+      try {
+        const {
+          geneDetails: fetchedDetail,
+          geneBounds: fetchedGeneBounds,
+          initialRange: fetchedRange,
+        } = await fetchGeneDetails(gene.gene_id);
+
+        // console.log("Fetched gene details:", fetchedDetail);
+        // console.log("Fetched gene bounds:", fetchedGeneBounds);
+        // console.log("Fetched initial range:", fetchedRange);
+
+        setGeneDetail(fetchedDetail);
+        setGeneBounds(fetchedGeneBounds);
+
+        if (fetchedRange) {
+          setStartPosition(fetchedRange.start.toString());
+          setEndPosition(fetchedRange.end.toString());
+          await fetchGeneSequence(fetchedRange.start, fetchedRange.end);
         }
+        console.log("Gene details fetched successfully:", fetchedDetail);
       } catch {
         setError("Failed to load gene information. Please try again.");
       } finally {
