@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { GeneInformation } from "./gene-information";
+import { GeneSequence } from "./gene-sequence";
 
 export default function GeneViewer({
   gene,
@@ -129,6 +130,26 @@ export default function GeneViewer({
         <ArrowLeftIcon className="mr-2 h-4 w-4" />
         Back to results
       </Button>
+
+      <GeneSequence
+        geneBounds={geneBounds}
+        geneDetail={geneDetail}
+        startPosition={startPosition}
+        endPosition={endPosition}
+        onStartPositionChange={setStartPosition}
+        onEndPositionChange={setEndPosition}
+        sequenceData={geneSequence}
+        sequenceRange={actualRange}
+        isLoading={isLoadingSequence}
+        error={error}
+        onSequenceLoadRequest={function (): void {
+          throw new Error("Function not implemented.");
+        }}
+        onSequenceClick={function (position: number, nucleotide: string): void {
+          throw new Error("Function not implemented.");
+        }}
+        maxViewRange={10000}
+      />
 
       <GeneInformation
         gene={gene}
