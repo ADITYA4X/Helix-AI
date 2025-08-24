@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 "use client";
 
 import {
@@ -119,6 +120,27 @@ export default function GeneViewer({
     void initializeGeneData();
   }, [gene, genomeId]);
 
+  const handleLoadSequence = useCallback(() => {
+    const start = parseInt(startPosition);
+    const end = parseInt(endPosition);
+    let validationError: string | null = null;
+
+    if (isNaN(start) || isNaN(end)) {
+      validationError = "Please enter vali start and end positions";
+    } else if (start >= end) {
+      validationError = "Start position must be less than end position";
+    } else if (geneBounds) {
+      const minBound = Math.min(geneBounds.min, geneBounds.max);
+      const maxBound = Math.max(geneBounds.min, geneBounds.max);
+
+      if (start < minBound) {
+        validationError = `Start position (${start.toLocaleString()}) is below the minimum value (${minBound.toLocaleString()})`;
+      } else if (end > maxBound) {
+        validationError = `End position (${end.toLocaleString()}) is exceeds the maxuimum value (${minBound.toLocaleString()})`;
+      }
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <Button
@@ -142,12 +164,8 @@ export default function GeneViewer({
         sequenceRange={actualRange}
         isLoading={isLoadingSequence}
         error={error}
-        onSequenceLoadRequest={function (): void {
-          throw new Error("Function not implemented.");
-        }}
-        onSequenceClick={function (position: number, nucleotide: string): void {
-          throw new Error("Function not implemented.");
-        }}
+        onSequenceLoadRequest={() => {}}
+        onSequenceClick={() => {}}
         maxViewRange={10000}
       />
 

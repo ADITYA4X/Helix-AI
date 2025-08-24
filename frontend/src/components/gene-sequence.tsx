@@ -2,7 +2,16 @@
 
 import type { GeneBounds, GeneDetailsFromSearch } from "~/utils/genome-api";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 export function GeneSequence({
   geneBounds,
@@ -51,9 +60,88 @@ export function GeneSequence({
   }, [startPosition, endPosition]);
 
   useEffect(() => {
+    if (!geneBounds) return;
+
+    const minBound = Math.min(geneBounds.min, geneBounds.max);
+    const maxBound = Math.max(geneBounds.min, geneBounds.max);
+    const totalSize = maxBound - minBound;
+
+    const startNum = parseInt(startPosition);
+    const endNum = parseInt(endPosition);
+
+    if (isNaN(startNum) || isNaN(endNum) || totalSize <= 0) {
+      setSliderValues({ start: 0, end: 100 });
+      return;
+    }
+
+    const startPercent = ((startNum - minBound) / totalSize) * 100;
+    const endPercent = ((endNum - minBound) / totalSize) * 100;
+
+    setSliderValues({
+      start: Math.max(0, Math.min(startPercent, 100)),
+      end: Math.max(0, Math.min(endPercent, 100)),
+    });
+  }, [startPosition, endPosition, geneBounds]);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingStart && !isDraggingEnd && !isDraggingRange) return;
       if (!sliderRef.current || !geneBounds) return;
+
+      const sliderRect = sliderRef.current.getBoundingClientRect();
+      const relativeX = e.clientX - sliderRect.left;
+      const sliderWidth = sliderRect.width;
+      let newPercent = (relativeX / sliderWidth) * 100;
+      newPercent = Math.max(0, Math.min(newPercent, 100));
+
+      const minBound = Math.min(geneBounds.min, geneBounds.max);
+      const maxBound = Math.max(geneBounds.min, geneBounds.max);
+      const geneSize = maxBound - minBound;
+
+      // Calculate new pos , so this will Translate the mouse pos perc into correspnding genomic co-ordinates within genome bounds
+      const newPosition = Math.round(minBound + (geneSize * newPercent) / 100);
+      const currentStartNum = parseInt(startPosition);
+      const currentEndNum = parseInt(endPosition);
+
+      if (isDraggingStart) {
+        if (!isNaN(currentEndNum)) {
+          if (currentEndNum - newPosition + 1 > maxViewRange) {
+            onStartPositionChange(String(currentEndNum - maxViewRange + 1));
+          } else if (newPosition < currentEndNum) {
+            onStartPositionChange(String(newPosition));
+          }
+        }
+      } else if (isDraggingEnd) {
+        if (!isNaN(currentStartNum)) {
+          if (newPosition - currentStartNum + 1 > maxViewRange) {
+            onEndPositionChange(String(currentStartNum + maxViewRange - 1));
+          } else if (newPosition > currentStartNum) {
+            onEndPositionChange(String(newPosition));
+          }
+        }
+      } else if (isDraggingRange) {
+        if (!dragStartX.current) return;
+        const pixelsPerBase = sliderWidth / geneSize;
+        const dragDeltaPixels = relativeX - dragStartX.current.x;
+        const dragDeltaBases = Math.round(dragDeltaPixels / pixelsPerBase);
+
+        let newStart = dragStartX.current.startPos + dragDeltaBases;
+        let newEnd = dragStartX.current.endPos + dragDeltaBases;
+        const rangeSize =
+          dragStartX.current.endPos - dragStartX.current.startPos;
+
+        if (newStart < minBound) {
+          newStart = minBound;
+          newEnd = minBound + rangeSize;
+        }
+        if (newEnd > maxBound) {
+          newEnd = maxBound;
+          newStart = maxBound - rangeSize;
+        }
+
+        onStartPositionChange(String(newStart));
+        onEndPositionChange(String(newEnd));
+      }
     };
 
     const handleMouseUp = () => {
@@ -76,7 +164,18 @@ export function GeneSequence({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [
+    isDraggingStart,
+    isDraggingEnd,
+    isDraggingRange,
+    geneBounds,
+    startPosition,
+    endPosition,
+    onStartPositionChange,
+    onEndPositionChange,
+    maxViewRange,
+    onSequenceLoadRequest,
+  ]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, handle: "start" | "end") => {
@@ -179,6 +278,42 @@ export function GeneSequence({
                   >
                     <div className="h-3 w-3 rounded-full bg-orange-600"></div>
                   </div>
+                </div>
+              </div>
+
+              {/* Position controls */}
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#4f463c]/70">Start :</span>
+                  <Input
+                    value={startPosition}
+                    onChange={(e) => onStartPositionChange(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="h-7 w-full border-[#4f463c]/10 text-xs sm:w-28"
+                  />
+                </div>
+
+                <Button
+                  size="sm"
+                  disabled={isLoading}
+                  onClick={onSequenceLoadRequest}
+                  className="h-7 w-full cursor-pointer bg-[#4f483c] text-xs text-white hover:bg-[#4f463c]/90 sm:w-auto"
+                >
+                  {isLoading ? "Loading..." : "Load Sequence"}
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#4f463c]/70">End :</span>
+                  <Input
+                    value={endPosition}
+                    onChange={(e) => onEndPositionChange(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="h-7 w-full border-[#4f463c]/10 text-xs sm:w-28"
+                  />
                 </div>
               </div>
             </div>
