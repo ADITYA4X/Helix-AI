@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type JSX,
 } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -208,6 +209,22 @@ export function GeneSequence({
     [startPosition, endPosition],
   );
 
+  const formattedSequence = useMemo(() => {
+    if (!sequenceData || !sequenceRange) return null;
+
+    const start = sequenceRange.start;
+    const BASES_PER_LINE = 150;
+    const lines: JSX.Element[] = [];
+
+    for (let i = 0; i < sequenceData.length; i += BASES_PER_LINE) {
+      const lineStartPos = start + i;
+      const chunk = sequenceData.substring(i, i + BASES_PER_LINE);
+      const colorizedChars: JSX.Element[] = [];
+    }
+
+    return "ATGC";
+  }, []);
+
   return (
     <Card className="gap-0 border-none bg-white py-0 shadow-sm">
       <CardHeader className="pt-4 pb-2">
@@ -319,6 +336,44 @@ export function GeneSequence({
             </div>
           </div>
         )}
+
+        <div className="mb-2 flex items-center justify-between text-xs">
+          <span className="text-[#4f463c]/70">
+            {geneDetail?.genomicInfo?.[0]?.strand === "+"
+              ? "Forward strand (5' -> 3')"
+              : geneDetail?.genomicInfo?.[0]?.strand === "-"
+                ? "Reverse strand (3' -> 5')"
+                : "Strand information is not available"}
+          </span>
+
+          <span className="text-[#4f463c]/70">
+            Maximum window size : {maxViewRange.toLocaleString()} bp
+          </span>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        <div className="w-full rounded-md bg-[#eeebe9]/50 p-3">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-stone-300 border-t-[#4f463c]"></div>
+            </div>
+          ) : sequenceData ? (
+            <div className="h-64 overflow-x-auto overflow-y-auto">
+              <pre className="font-mono text-xs leading-relaxed">
+                {formattedSequence}
+              </pre>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-[#4f453c]/60">
+              {error ? "Error loading sequence" : "No sequence data loaded."}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

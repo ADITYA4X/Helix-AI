@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-empty-function */
 "use client";
 
@@ -126,20 +127,31 @@ export default function GeneViewer({
     let validationError: string | null = null;
 
     if (isNaN(start) || isNaN(end)) {
-      validationError = "Please enter vali start and end positions";
+      validationError = "Please enter valid start and end positions";
     } else if (start >= end) {
       validationError = "Start position must be less than end position";
     } else if (geneBounds) {
       const minBound = Math.min(geneBounds.min, geneBounds.max);
       const maxBound = Math.max(geneBounds.min, geneBounds.max);
-
       if (start < minBound) {
         validationError = `Start position (${start.toLocaleString()}) is below the minimum value (${minBound.toLocaleString()})`;
       } else if (end > maxBound) {
-        validationError = `End position (${end.toLocaleString()}) is exceeds the maxuimum value (${minBound.toLocaleString()})`;
+        validationError = `End position (${end.toLocaleString()}) exceeds the maximum value (${maxBound.toLocaleString()})`;
+      }
+
+      if (end - start > 10000) {
+        validationError = `Selected range exceeds maximum view range of 10.000 bp.`;
       }
     }
-  }, []);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setError(null);
+    fetchGeneSequence(start, end);
+  }, [startPosition, endPosition, fetchGeneSequence, geneBounds]);
 
   return (
     <div className="space-y-6">
@@ -164,7 +176,7 @@ export default function GeneViewer({
         sequenceRange={actualRange}
         isLoading={isLoadingSequence}
         error={error}
-        onSequenceLoadRequest={() => {}}
+        onSequenceLoadRequest={handleLoadSequence}
         onSequenceClick={() => {}}
         maxViewRange={10000}
       />
