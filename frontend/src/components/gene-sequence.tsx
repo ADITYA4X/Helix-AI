@@ -13,6 +13,7 @@ import {
 } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { getNucleotideColorClass } from "~/utils/coloring-utils";
 
 export function GeneSequence({
   geneBounds,
@@ -52,6 +53,11 @@ export function GeneSequence({
     x: number;
     startPos: number;
     endPos: number;
+  } | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null);
+  const [mousePosition, setMousePosition] = useState<{
+    x: number;
+    y: number;
   } | null>(null);
 
   const currentRangeSize = useMemo(() => {
@@ -220,10 +226,42 @@ export function GeneSequence({
       const lineStartPos = start + i;
       const chunk = sequenceData.substring(i, i + BASES_PER_LINE);
       const colorizedChars: JSX.Element[] = [];
+
+      for (let j = 0; j < chunk.length; j++) {
+        const nucleotide = chunk[j] ?? "";
+        const nucleotidePosition = lineStartPos + j;
+        const color = getNucleotideColorClass(nucleotide);
+        colorizedChars.push(
+          <span
+            key={j}
+            className={`${color} group relative cursor-pointer`}
+            onClick={() => onSequenceClick(nucleotidePosition, nucleotide)}
+            onMouseEnter={(e) => {
+              setHoverPosition(nucleotidePosition);
+              setMousePosition({ x: e.clientX, y: e.clientY });
+            }}
+            onMouseLeave={(e) => {
+              setHoverPosition(null);
+              setMousePosition(null);
+            }}
+          >
+            {nucleotide}
+          </span>,
+        );
+      }
+
+      lines.push(
+        <div key={i} className="flex">
+          <div className="mr-2 w-20 text-right text-stone-500 select-none">
+            {lineStartPos.toLocaleString()}
+          </div>
+          <div className="flex-1 tracking-wide">{colorizedChars}</div>
+        </div>,
+      );
     }
 
-    return "ATGC";
-  }, []);
+    return lines;
+  }, [sequenceData, sequenceRange, onSequenceClick]);
 
   return (
     <Card className="gap-0 border-none bg-white py-0 shadow-sm">
