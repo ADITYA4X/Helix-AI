@@ -412,6 +412,38 @@ export function GeneSequence({
             </p>
           )}
         </div>
+
+        {hoverPosition !== null && mousePosition !== null && (
+          <div
+            className="pointer-events-none fixed z-50 rounded bg-[#4d433c] px-2 py-1 text-xs text-white shadow-md"
+            style={{
+              top: mousePosition.y - 30,
+              left: mousePosition.x,
+              transform: "translateX(-50%)",
+            }}
+          >
+            Position: {hoverPosition.toLocaleString()}
+          </div>
+        )}
+
+        <div className="mt-3 flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <div className="h-3 w-3 rounded-full bg-red-600"></div>
+            <span className="text-xs text-[#4d433c]">A</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-3 w-3 rounded-full bg-blue-600"></div>
+            <span className="text-xs text-[#4d433c]">T</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-3 w-3 rounded-full bg-green-600"></div>
+            <span className="text-xs text-[#4d433c]">G</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-3 w-3 rounded-full bg-amber-600"></div>
+            <span className="text-xs text-[#4d433c]">C</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
