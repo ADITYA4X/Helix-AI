@@ -47,6 +47,16 @@ export interface GeneBounds {
   max: number;
 }
 
+export interface ClinvarVariant {
+  clinvar_id: string;
+  title: string;
+  variation_type: string;
+  classification: string;
+  gene_sort: string;
+  chromsome: string;
+  location: string;
+}
+
 export async function getAvailableGenomes() {
   const apiUrl = "https://api.genome.ucsc.edu/list/ucscGenomes";
   const response = await fetch(apiUrl);
@@ -268,4 +278,45 @@ export async function fetchGeneSequence(
       error: "Internal error in fetching sequence data.",
     };
   }
+}
+
+export async function fetchClinvarVariants(
+  chrom: string,
+  geneBound: GeneBounds,
+  genomeId: string,
+): Promise<ClinvarVariant[]> {
+  const chromFormatted = chrom.replace(/^chr/i, "");
+
+  const minBound = Math.min(geneBound.min, geneBound.max);
+  const maxBound = Math.max(geneBound.min, geneBound.max);
+
+  const positionField = genomeId === "hg19" ? "chrpos37" : "chrpos38";
+  const searchTerm = `${chromFormatted}[chromosome] AND ${minBound}:${maxBound}[${positionField}]`;
+
+  const searchUrl =
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
+  const searchParams = new URLSearchParams({
+    db: "clinvar",
+    term: searchTerm,
+    retmode: "json",
+    retmax: "20",
+  });
+
+  const searchResponse = await fetch(`${searchUrl}?${searchParams.toString()}`);
+
+  if (!searchResponse.ok) {
+    throw new Error("ClinVar search failed: " + searchResponse.statusText);
+  }
+
+  const searchData = await searchResponse.json();
+
+  if (
+    !searchData.esearchresult?.idlist ||
+    searchData.esearchresult.idlist.length === 0
+  ) {
+    console.log("No ClinVar variants found");
+    return [];
+  }
+
+  const variantIds = searchData.esearchresult.idlist;
 }

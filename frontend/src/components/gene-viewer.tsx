@@ -14,6 +14,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { GeneInformation } from "./gene-information";
 import { GeneSequence } from "./gene-sequence";
+import KnownVariants from "./known-variants";
 
 export default function GeneViewer({
   gene,
@@ -164,6 +165,8 @@ export default function GeneViewer({
         <ArrowLeftIcon className="mr-2 h-4 w-4" />
         Back to results
       </Button>
+
+      <KnownVariants />
 
       <GeneSequence
         geneBounds={geneBounds}
