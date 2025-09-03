@@ -53,7 +53,7 @@ export interface ClinvarVariant {
   variation_type: string;
   classification: string;
   gene_sort: string;
-  chromsome: string;
+  chromosome: string;
   location: string;
 }
 
@@ -319,4 +319,51 @@ export async function fetchClinvarVariants(
   }
 
   const variantIds = searchData.esearchresult.idlist;
+
+  const summaryUrl =
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi";
+  const summaryParams = new URLSearchParams({
+    db: "clinvar",
+    id: variantIds.join(","),
+    retmode: "json",
+  });
+
+  const summaryResponse = await fetch(
+    `${summaryUrl}?${summaryParams.toString()}`,
+  );
+
+  if (!summaryResponse.ok) {
+    throw new Error(
+      "Failed to fetch variant details: " + summaryResponse.statusText,
+    );
+  }
+
+  const summaryData = await summaryResponse.json();
+  const variants: ClinvarVariant[] = [];
+
+  if (summaryData.result?.uids) {
+    for (const id of summaryData.result.uids) {
+      const variant = summaryData.result[id];
+      variants.push({
+        clinvar_id: id,
+        title: variant.title,
+        variation_type: (variant.obj_type ?? "Unknown")
+          .split(" ")
+          .map(
+            (word: string) =>
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+          )
+          .join(" "),
+        classification:
+          variant.germline_classification.description ?? "Unknown",
+        gene_sort: variant.gene_sort ?? "",
+        chromosome: chromFormatted,
+        location: variant.location_sort
+          ? parseInt(variant.location_sort).toLocaleString()
+          : "Unknown",
+      });
+    }
+  }
+
+  return variants;
 }
