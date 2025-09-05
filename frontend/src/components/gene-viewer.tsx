@@ -5,9 +5,11 @@
 import {
   fetchGeneDetails,
   fetchGeneSequence as fetchGeneSequenceApi,
+  fetchClinvarVariants as apiFetchClinvarVariants,
   type GeneFromSearch,
   type GeneDetailsFromSearch,
   type GeneBounds,
+  type ClinvarVariant,
 } from "~/utils/genome-api";
 import { Button } from "./ui/button";
 import { ArrowLeftIcon } from "lucide-react";
@@ -36,6 +38,10 @@ export default function GeneViewer({
   const [endPosition, setEndPosition] = useState<string>("");
   const [geneSequence, setGeneSequence] = useState<string>("");
   const [isLoadingSequence, setIsLoadingSequence] = useState(false);
+
+  const [clinvarVariants, setClinvarVariants] = useState<ClinvarVariant[]>([]);
+  const [isLoadingClinvar, setIsLoadingClinvar] = useState(false);
+  const [clinvarError, setClinvarError] = useState<string | null>(null);
 
   const [actualRange, setActualRange] = useState<{
     start: number;
@@ -153,6 +159,42 @@ export default function GeneViewer({
     setError(null);
     fetchGeneSequence(start, end);
   }, [startPosition, endPosition, fetchGeneSequence, geneBounds]);
+
+  const fetchClinvarVariants = async () => {
+    if (!gene.chrom || !geneBounds) return;
+
+    setIsLoadingClinvar(true);
+    setClinvarError(null);
+
+    try {
+      const variants = await apiFetchClinvarVariants(
+        gene.chrom,
+        geneBounds,
+        genomeId,
+      );
+      setClinvarVariants(variants);
+      console.log(variants);
+    } catch (error) {
+      setClinvarError("Failed to fetch ClinVar variants");
+      setClinvarVariants([]);
+    } finally {
+      setIsLoadingClinvar(false);
+    }
+  };
+
+  useEffect(() => {
+    if (geneBounds) {
+      fetchClinvarVariants();
+    }
+  }, [geneBounds]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-gray-800"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
