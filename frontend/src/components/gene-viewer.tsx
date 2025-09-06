@@ -48,6 +48,17 @@ export default function GeneViewer({
     end: number;
   } | null>(null);
 
+  const updateClinvarVariant = (
+    clinvar_id: string,
+    updateVariant: ClinvarVariant,
+  ) => {
+    setClinvarVariants((currentVariants) =>
+      currentVariants.map((v) =>
+        v.clinvar_id == clinvar_id ? updateVariant : v,
+      ),
+    );
+  };
+
   const fetchGeneSequence = useCallback(
     async (start: number, end: number) => {
       try {
@@ -208,7 +219,16 @@ export default function GeneViewer({
         Back to results
       </Button>
 
-      <KnownVariants />
+      <KnownVariants
+        refreshVariants={fetchClinvarVariants}
+        showComparison={() => {}}
+        updateClinvarVariant={updateClinvarVariant}
+        clinvarVariants={clinvarVariants}
+        isLoadingClinvar={isLoadingClinvar}
+        clinvarError={clinvarError}
+        genomeId={genomeId}
+        gene={gene}
+      />
 
       <GeneSequence
         geneBounds={geneBounds}
