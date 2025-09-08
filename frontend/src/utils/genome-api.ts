@@ -55,6 +55,13 @@ export interface ClinvarVariant {
   gene_sort: string;
   chromosome: string;
   location: string;
+  evo2Result?: {
+    prediction: string;
+    delta_score: number;
+    classification_confidence: number;
+  };
+  isAnalyzing?: boolean;
+  evo2Error?: string;
 }
 
 export async function getAvailableGenomes() {
