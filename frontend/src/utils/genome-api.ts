@@ -64,6 +64,15 @@ export interface ClinvarVariant {
   evo2Error?: string;
 }
 
+export interface AnalysisResult {
+  position: number;
+  reference: string;
+  alternative: string;
+  delta_score: number;
+  prediction: string;
+  classification_confidence: number;
+}
+
 export async function getAvailableGenomes() {
   const apiUrl = "https://api.genome.ucsc.edu/list/ucscGenomes";
   const response = await fetch(apiUrl);
@@ -374,3 +383,31 @@ export async function fetchClinvarVariants(
 
   return variants;
 }
+
+export async function analyzeVariantWithAPI(position,
+  alternative,
+  genomeId,
+  chromosome,}: {
+  position: number;
+  alternative: string;
+  genomeId: string;
+  chromosome: string;
+  }): Promise<AnalysisResult>{
+    const queryParams = new URLSearchParams({
+    variant_position: position.toString(),
+    alternative: alternative,
+    genome: genomeId,
+    chromosome: chromosome,
+  });
+
+  const url = `${env.NEXT_PUBLIC_ANALYZE_SINGLE_VARIANT_BASE_URL}?${queryParams.toString()}`;
+
+  const response = await fetch(url, { method: "POST" });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error("Failed to analyze variant " + errorText);
+  }
+
+  return await response.json();
+  }

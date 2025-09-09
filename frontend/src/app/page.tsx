@@ -166,7 +166,7 @@ export default function HomePage() {
               </h1>
             </div>
             <span className="text-sm font-light text-[#4f463c]/70">
-              EVO2:Sequence Intelligence
+              EVO2: Sequence Intelligence
             </span>
           </div>
         </div>

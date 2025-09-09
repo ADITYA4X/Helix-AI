@@ -11,7 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { ExternalLink, Shield, TextCursorInput, Zap } from "lucide-react";
+import {
+  BarChart2,
+  ExternalLink,
+  Shield,
+  TextCursorInput,
+  Zap,
+} from "lucide-react";
 import { getClassificationColorClasses } from "~/utils/coloring-utils";
 
 export default function KnownVariants({
@@ -33,6 +39,48 @@ export default function KnownVariants({
   genomeId: string;
   gene: GeneFromSearch;
 }) {
+  const analyzeVariant = async (variant: ClinvarVariant) => {
+    let variantDetails = null;
+    const position = variant.location
+      ? parseInt(variant.location.replace(",", ""))
+      : null;
+
+    const regex = /(\w)>(\w)/;
+    const refAltMatch = regex.exec(variant.title);
+
+    if (refAltMatch && refAltMatch.length === 3) {
+      variantDetails = {
+        position,
+        reference: refAltMatch[1],
+        alternative: refAltMatch[2],
+      };
+    }
+
+    if (
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+      !variantDetails ||
+      !variantDetails.position ||
+      !variantDetails.reference ||
+      !variantDetails.alternative
+    ) {
+      return;
+    }
+
+    updateClinvarVariant(variant.clinvar_id, {
+      ...variant,
+      isAnalyzing: true,
+    });
+
+    try {
+    } catch (error) {
+      updateClinvarVariant(variant.clinvar_id, {
+        ...variant,
+        isAnalyzing: false,
+        evo2Error: error instanceof Error ? error.message : "Analysis failed",
+      });
+    }
+  };
+
   return (
     <Card className="gap-0 border-none bg-white py-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pt-4 pb-2">
@@ -62,7 +110,7 @@ export default function KnownVariants({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#4f473c]/30 border-t-[#4f473c]"></div>
           </div>
         ) : clinvarVariants.length > 0 ? (
-          <div className="h-96 max-h-96 overflow-y-scroll rounded-md border border-[#4f473c]/5">
+          <div className="h-100 max-h-100 overflow-y-scroll rounded-md border border-[#4f473c]/5">
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-[#e9eeea]/80 hover:bg-[#e9eeea]/30">
@@ -134,7 +182,7 @@ export default function KnownVariants({
                     </TableCell>
 
                     <TableCell className="py-2 text-xs">
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col items-start gap-1">
                         {variant.variation_type.toLowerCase() ===
                         "single nucleotide variant" ? (
                           !variant.evo2Result ? (
@@ -147,9 +195,8 @@ export default function KnownVariants({
                             >
                               {variant.isAnalyzing ? (
                                 <>
-                                  <span className="mr-1 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#4f473c]/30 border-t-[#4f473c]">
-                                    Analyzing...
-                                  </span>
+                                  <span className="mr-1 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#4f473c]/30 border-t-[#4f473c]"></span>
+                                  Analyzing...
                                 </>
                               ) : (
                                 <>
@@ -159,7 +206,13 @@ export default function KnownVariants({
                               )}
                             </Button>
                           ) : (
-                            <Button className="h-7 cursor-pointer border-green-200 bg-green-50 px-3 text-xs text-green-700 hover:bg-green-100">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 cursor-pointer border-green-200 bg-green-50 px-3 text-xs text-green-700 hover:bg-green-100"
+                              onClick={() => showComparison(variant)}
+                            >
+                              <BarChart2 className="mr-1 inline-block h-3 w-3" />
                               Compare Result
                             </Button>
                           )
