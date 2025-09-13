@@ -1,6 +1,10 @@
 "use client";
 
-import type { ClinvarVariant, GeneFromSearch } from "~/utils/genome-api";
+import {
+  analyzeVariantWithAPI,
+  type ClinvarVariant,
+  type GeneFromSearch,
+} from "~/utils/genome-api";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -14,9 +18,9 @@ import {
 import {
   BarChart2,
   ExternalLink,
+  Search,
   Shield,
   TextCursorInput,
-  Zap,
 } from "lucide-react";
 import { getClassificationColorClasses } from "~/utils/coloring-utils";
 
@@ -42,7 +46,7 @@ export default function KnownVariants({
   const analyzeVariant = async (variant: ClinvarVariant) => {
     let variantDetails = null;
     const position = variant.location
-      ? parseInt(variant.location.replace(",", ""))
+      ? parseInt(variant.location.replaceAll(",", ""))
       : null;
 
     const regex = /(\w)>(\w)/;
@@ -72,6 +76,18 @@ export default function KnownVariants({
     });
 
     try {
+      const data = await analyzeVariantWithAPI({
+        position: variantDetails.position,
+        alternative: variantDetails.alternative,
+        genomeId: genomeId,
+        chromosome: gene.chrom,
+      });
+
+      const updatedVariant: ClinvarVariant = {
+        ...variant,
+        isAnalyzing: false,
+        evo2Result: data,
+      };
     } catch (error) {
       updateClinvarVariant(variant.clinvar_id, {
         ...variant,
@@ -191,7 +207,7 @@ export default function KnownVariants({
                               size="sm"
                               className="h-7 cursor-pointer border-[#4f473c]/20 bg-[#e9eeea] px-3 text-xs text-[#4f473c] hover:bg-[#4f473c]/10"
                               disabled={variant.isAnalyzing}
-                              // onClick={() => analyzeVariant()}
+                              onClick={() => analyzeVariant(variant)}
                             >
                               {variant.isAnalyzing ? (
                                 <>
@@ -225,7 +241,12 @@ export default function KnownVariants({
             </Table>
           </div>
         ) : (
-          <></>
+          <div className="flex h-48 flex-col items-center justify-center text-center text-gray-400">
+            <Search className="mb-4 h-10 w-10 text-gray-300" />
+            <p className="text-sm leading-relaxed">
+              No ClinVar variants found for this gene.
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

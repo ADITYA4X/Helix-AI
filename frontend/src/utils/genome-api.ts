@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+import { env } from "~/env";
+
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 export interface GenomeAssemblyFromSearch {
   organism: string;
@@ -384,16 +387,19 @@ export async function fetchClinvarVariants(
   return variants;
 }
 
-export async function analyzeVariantWithAPI(position,
+export async function analyzeVariantWithAPI({
+  position,
   alternative,
   genomeId,
-  chromosome,}: {
+  chromosome,
+}: {
   position: number;
   alternative: string;
   genomeId: string;
   chromosome: string;
-  }): Promise<AnalysisResult>{
-    const queryParams = new URLSearchParams({
+}): Promise<AnalysisResult> {
+  // constructing a query string
+  const queryParams = new URLSearchParams({
     variant_position: position.toString(),
     alternative: alternative,
     genome: genomeId,
@@ -409,5 +415,6 @@ export async function analyzeVariantWithAPI(position,
     throw new Error("Failed to analyze variant " + errorText);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return await response.json();
-  }
+}
